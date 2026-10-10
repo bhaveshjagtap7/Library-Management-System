@@ -171,3 +171,11 @@ async function returnBook(userId, bookId) {
         body: JSON.stringify({ user_id: userId, book_id: bookId }),
     });
 }
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('app-sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('open');
+    }
+}
+

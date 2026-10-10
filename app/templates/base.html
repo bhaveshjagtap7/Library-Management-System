@@ -6,41 +6,53 @@
     <title>{% block title %}Enterprise Smart Library{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="app-shell">
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="app-sidebar">
         <div class="sidebar-brand">
-            <div class="brand-icon">📚</div>
+            <div class="brand-logo-container">
+                <span class="brand-symbol">❖</span>
+            </div>
             <div class="brand-text">
                 <span class="brand-name">LibraryOS</span>
-                <span class="brand-version">Enterprise v1.0</span>
+                <span class="brand-version">Enterprise Cloud v1.0</span>
             </div>
         </div>
+        <div class="nav-category">MAIN NAVIGATION</div>
         <nav class="sidebar-nav">
             <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
-                <span class="nav-icon">🏠</span>
+                <span class="nav-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                </span>
                 <span class="nav-label">Dashboard</span>
             </a>
             <a href="/books" class="nav-item {% if request.path == '/books' %}active{% endif %}">
-                <span class="nav-icon">📖</span>
-                <span class="nav-label">Books</span>
+                <span class="nav-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                </span>
+                <span class="nav-label">Book Catalog</span>
             </a>
             <a href="/users" class="nav-item {% if request.path == '/users' %}active{% endif %}">
-                <span class="nav-icon">👥</span>
-                <span class="nav-label">Users</span>
+                <span class="nav-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </span>
+                <span class="nav-label">Members & Users</span>
             </a>
             <a href="/loans" class="nav-item {% if request.path == '/loans' %}active{% endif %}">
-                <span class="nav-icon">📋</span>
-                <span class="nav-label">Loans</span>
+                <span class="nav-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
+                </span>
+                <span class="nav-label">Loan Management</span>
             </a>
         </nav>
         <div class="sidebar-footer">
             <div class="status-indicator">
                 <span class="status-dot"></span>
-                <span class="status-text">System Healthy</span>
+                <span class="status-text">Production Cluster UP</span>
             </div>
         </div>
     </aside>
@@ -48,12 +60,23 @@
     <!-- Main Content -->
     <div class="main-content">
         <header class="top-bar">
-            <div class="page-title">
-                <h1>{% block page_title %}Dashboard{% endblock %}</h1>
-                <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
+            <div class="top-bar-left">
+                <button class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+                <div class="page-title">
+                    <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                    <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
+                </div>
             </div>
             <div class="top-bar-actions">
                 {% block header_actions %}{% endblock %}
+                <div class="header-divider"></div>
+                <div class="user-profile-badge" title="Authenticated User">
+                    <div class="avatar-circle">BJ</div>
+                    <div class="user-profile-info">
+                        <span class="user-profile-name">Bhavesh Jagtap</span>
+                        <span class="user-profile-role">Admin • Owner</span>
+                    </div>
+                </div>
             </div>
         </header>
 
