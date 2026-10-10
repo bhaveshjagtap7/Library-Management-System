@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Books — LibraryOS{% endblock %}
+{% block page_title %}Book Catalog{% endblock %}
+{% block page_subtitle %}Manage and search the library book collection{% endblock %}
+
+{% block header_actions %}
+<button class="btn btn-primary" onclick="showAddBookModal()">+ Add Book</button>
+{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <div class="search-bar">
+        <input type="text" id="book-search" class="search-input" placeholder="Search by title, author, or ISBN…" oninput="debounceSearch()">
+        <span class="search-icon">🔍</span>
+    </div>
+    <span id="book-count" class="record-count">Loading…</span>
+</div>
+
+<div class="panel">
+    <div class="panel-body">
+        <div id="books-table-container">
+            <div class="loading-state">Loading books…</div>
+        </div>
+    </div>
+</div>
+
+<!-- Book Detail Pane (side sheet) -->
+<div id="detail-panel" class="detail-panel hidden">
+    <div class="detail-header">
+        <h3 id="detail-title">Book Details</h3>
+        <button class="modal-close" onclick="closeDetailPanel()">✕</button>
+    </div>
+    <div class="detail-body" id="detail-body"></div>
+    <div class="detail-footer">
+        <button class="btn btn-primary" id="detail-borrow-btn" onclick="borrowFromDetail()">Borrow Book</button>
+        <button class="btn btn-secondary" onclick="closeDetailPanel()">Close</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allBooks = [];
+let selectedBook = null;
+let searchTimer = null;
+
+function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadBooks, 300);
+}
+
+async function loadBooks() {
+    const q = document.getElementById('book-search').value.trim();
+    const result = await searchBooks(q);
+    allBooks = result || [];
+    renderBooksTable(allBooks);
+    document.getElementById('book-count').textContent = `${allBooks.length} record(s)`;
+}
+
+function renderBooksTable(books) {
+    const container = document.getElementById('books-table-container');
+    if (!books || books.length === 0) {
+        container.innerHTML = '<div class="empty-state">No books found matching your search.</div>';
+        return;
+    }
+    const rows = books.map(b => `
+        <tr class="clickable-row" onclick="showBookDetail('${b.book_id}')">
+            <td><span class="badge badge-secondary">${b.book_id}</span></td>
+            <td><strong>${escapeHtml(b.title)}</strong></td>
+            <td>${escapeHtml(b.author)}</td>
+            <td><code>${b.isbn}</code></td>
+            <td class="text-center">${b.total_copies}</td>
+            <td class="text-center">${b.available_copies}</td>
+            <td><span class="badge ${b.available_copies > 0 ? 'badge-success' : 'badge-danger'}">${b.available_copies > 0 ? 'Available' : 'Out of Stock'}</span></td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); promptBorrow('${b.book_id}')">Borrow</button>
+            </td>
+        </tr>`).join('');
+    container.innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Title</th><th>Author</th><th>ISBN</th>
+                    <th class="text-center">Total</th><th class="text-center">Available</th>
+                    <th>Status</th><th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+}
+
+async function showBookDetail(bookId) {
+    const res = await apiFetch(`/api/books/${bookId}`);
+    if (!res || !res.book) return;
+    const b = res.book;
+    selectedBook = b;
+    document.getElementById('detail-title').textContent = b.title;
+    document.getElementById('detail-body').innerHTML = `
+        <div class="detail-field"><span class="detail-label">Book ID</span><span class="badge badge-secondary">${b.book_id}</span></div>
+        <div class="detail-field"><span class="detail-label">Title</span><span>${escapeHtml(b.title)}</span></div>
+        <div class="detail-field"><span class="detail-label">Author</span><span>${escapeHtml(b.author)}</span></div>
+        <div class="detail-field"><span class="detail-label">ISBN</span><code>${b.isbn}</code></div>
+        <div class="detail-field"><span class="detail-label">Total Copies</span><span>${b.total_copies}</span></div>
+        <div class="detail-field"><span class="detail-label">Available</span><span>${b.available_copies}</span></div>
+        <div class="detail-field"><span class="detail-label">Status</span><span class="badge ${b.available_copies > 0 ? 'badge-success' : 'badge-danger'}">${b.available_copies > 0 ? 'Available' : 'Out of Stock'}</span></div>`;
+    document.getElementById('detail-borrow-btn').disabled = b.available_copies <= 0;
+    document.getElementById('detail-panel').classList.remove('hidden');
+}
+
+function closeDetailPanel() {
+    document.getElementById('detail-panel').classList.add('hidden');
+    selectedBook = null;
+}
+
+function borrowFromDetail() {
+    if (!selectedBook) return;
+    promptBorrow(selectedBook.book_id);
+}
+
+function showAddBookModal() {
+    document.getElementById('form-modal-title').textContent = 'Add New Book';
+    document.getElementById('form-modal-body').innerHTML = `
+        <div class="form-group">
+            <label class="form-label">Book ID <span class="required">*</span></label>
+            <input type="text" class="form-input" id="fm-book-id" placeholder="e.g. B003">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Title <span class="required">*</span></label>
+            <input type="text" class="form-input" id="fm-title" placeholder="Book title">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Author <span class="required">*</span></label>
+            <input type="text" class="form-input" id="fm-author" placeholder="Author name">
+        </div>
+        <div class="form-group">
+            <label class="form-label">ISBN <span class="required">*</span></label>
+            <input type="text" class="form-input" id="fm-isbn" placeholder="978-0000000000">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Total Copies <span class="required">*</span></label>
+            <input type="number" class="form-input" id="fm-copies" min="1" value="1">
+        </div>`;
+    document.getElementById('form-modal-submit').onclick = submitAddBook;
+    document.getElementById('form-modal-overlay').classList.remove('hidden');
+}
+
+async function submitAddBook() {
+    const book_id = document.getElementById('fm-book-id').value.trim();
+    const title = document.getElementById('fm-title').value.trim();
+    const author = document.getElementById('fm-author').value.trim();
+    const isbn = document.getElementById('fm-isbn').value.trim();
+    const total_copies = parseInt(document.getElementById('fm-copies').value, 10);
+    if (!book_id || !title || !author || !isbn) {
+        showToast('Please fill in all required fields.', 'error');
+        return;
+    }
+    const res = await addBook({ book_id, title, author, isbn, total_copies });
+    if (res) {
+        closeFormModal();
+        showToast(`Book "${title}" added successfully!`, 'success');
+        loadBooks();
+    }
+}
+
+function promptBorrow(bookId) {
+    openFormModal('Borrow Book', `
+        <p>Select a user to borrow <strong>${bookId}</strong>:</p>
+        <div class="form-group">
+            <label class="form-label">User ID <span class="required">*</span></label>
+            <input type="text" class="form-input" id="borrow-user-id" placeholder="e.g. U101">
+        </div>`, async () => {
+        const userId = document.getElementById('borrow-user-id').value.trim();
+        if (!userId) { showToast('User ID is required', 'error'); return; }
+        const res = await borrowBook(userId, bookId);
+        if (res) {
+            closeFormModal();
+            showToast('Book borrowed successfully!', 'success');
+            loadBooks();
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', loadBooks);
+</script>
+{% endblock %}

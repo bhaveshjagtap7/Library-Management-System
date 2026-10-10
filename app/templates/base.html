@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Enterprise Smart Library{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">📚</div>
+            <div class="brand-text">
+                <span class="brand-name">LibraryOS</span>
+                <span class="brand-version">Enterprise v1.0</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Dashboard</span>
+            </a>
+            <a href="/books" class="nav-item {% if request.path == '/books' %}active{% endif %}">
+                <span class="nav-icon">📖</span>
+                <span class="nav-label">Books</span>
+            </a>
+            <a href="/users" class="nav-item {% if request.path == '/users' %}active{% endif %}">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Users</span>
+            </a>
+            <a href="/loans" class="nav-item {% if request.path == '/loans' %}active{% endif %}">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">Loans</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span class="status-text">System Healthy</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="top-bar">
+            <div class="page-title">
+                <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
+            </div>
+            <div class="top-bar-actions">
+                {% block header_actions %}{% endblock %}
+            </div>
+        </header>
+
+        <main class="page-body">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Modal Overlay -->
+<div id="modal-overlay" class="modal-overlay hidden">
+    <div id="modal-box" class="modal-box">
+        <div class="modal-header">
+            <h3 id="modal-title">Confirm</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <p id="modal-message"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button id="modal-confirm-btn" class="btn btn-danger">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- Generic Form Modal -->
+<div id="form-modal-overlay" class="modal-overlay hidden">
+    <div id="form-modal-box" class="modal-box modal-lg">
+        <div class="modal-header">
+            <h3 id="form-modal-title">Form</h3>
+            <button class="modal-close" onclick="closeFormModal()">✕</button>
+        </div>
+        <div class="modal-body" id="form-modal-body"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeFormModal()">Cancel</button>
+            <button id="form-modal-submit" class="btn btn-primary">Submit</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

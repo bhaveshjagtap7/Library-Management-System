@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Loans — LibraryOS{% endblock %}
+{% block page_title %}Loan Management{% endblock %}
+{% block page_subtitle %}Track borrowings and process book returns{% endblock %}
+
+{% block header_actions %}
+<button class="btn btn-primary" onclick="showBorrowModal()">+ Borrow Book</button>
+{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <div class="filter-tabs">
+        <button class="filter-tab active" id="tab-all" onclick="setFilter('all')">All Loans</button>
+        <button class="filter-tab" id="tab-active" onclick="setFilter('ACTIVE')">Active</button>
+        <button class="filter-tab" id="tab-returned" onclick="setFilter('RETURNED')">Returned</button>
+    </div>
+    <span id="loan-count" class="record-count">Loading…</span>
+</div>
+
+<div class="panel">
+    <div class="panel-body">
+        <div id="loans-table-container">
+            <div class="loading-state">Loading loans…</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allLoans = [];
+let currentFilter = 'all';
+
+async function loadLoans() {
+    const res = await getLoans();
+    allLoans = res || [];
+    renderLoansTable();
+}
+
+function setFilter(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${filter.toLowerCase()}`).classList.add('active');
+    renderLoansTable();
+}
+
+function renderLoansTable() {
+    const loans = currentFilter === 'all'
+        ? allLoans
+        : allLoans.filter(l => l.status === currentFilter);
+
+    document.getElementById('loan-count').textContent = `${loans.length} record(s)`;
+    const container = document.getElementById('loans-table-container');
+    if (!loans || loans.length === 0) {
+        container.innerHTML = '<div class="empty-state">No loans found.</div>';
+        return;
+    }
+    // Sort: ACTIVE first, then by borrowed_at desc
+    const sorted = [...loans].sort((a, b) => {
+        if (a.status === b.status) return new Date(b.borrowed_at) - new Date(a.borrowed_at);
+        return a.status === 'ACTIVE' ? -1 : 1;
+    });
+    const rows = sorted.map(l => `
+        <tr>
+            <td><span class="badge badge-secondary">${l.loan_id}</span></td>
+            <td>${l.user_id}</td>
+            <td>${l.book_id}</td>
+            <td>${formatDate(l.borrowed_at)}</td>
+            <td>${l.returned_at ? formatDate(l.returned_at) : '<span class="text-muted">—</span>'}</td>
+            <td><span class="badge ${l.status === 'ACTIVE' ? 'badge-warning' : 'badge-success'}">${l.status}</span></td>
+            <td>
+                ${l.status === 'ACTIVE'
+                    ? `<button class="btn btn-sm btn-secondary" onclick="processReturn('${l.user_id}','${l.book_id}','${l.loan_id}')">Return</button>`
+                    : '<span class="text-muted">—</span>'}
+            </td>
+        </tr>`).join('');
+    container.innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr><th>Loan ID</th><th>User ID</th><th>Book ID</th><th>Borrowed</th><th>Returned</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+}
+
+async function processReturn(userId, bookId, loanId) {
+    openConfirmModal(
+        'Return Book',
+        `Return book <strong>${bookId}</strong> for user <strong>${userId}</strong>?`,
+        async () => {
+            const res = await returnBook(userId, bookId);
+            if (res !== null) {
+                closeModal();
+                showToast(`Book ${bookId} returned successfully!`, 'success');
+                loadLoans();
+            }
+        }
+    );
+}
+
+function showBorrowModal() {
+    openFormModal('Borrow a Book', `
+        <div class="form-group">
+            <label class="form-label">User ID <span class="required">*</span></label>
+            <input type="text" class="form-input" id="borrow-user-id" placeholder="e.g. U101">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Book ID <span class="required">*</span></label>
+            <input type="text" class="form-input" id="borrow-book-id" placeholder="e.g. B001">
+        </div>`, async () => {
+        const userId = document.getElementById('borrow-user-id').value.trim();
+        const bookId = document.getElementById('borrow-book-id').value.trim();
+        if (!userId || !bookId) { showToast('Both fields are required', 'error'); return; }
+        const res = await borrowBook(userId, bookId);
+        if (res) {
+            closeFormModal();
+            showToast('Loan created successfully!', 'success');
+            loadLoans();
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', loadLoans);
+</script>
+{% endblock %}

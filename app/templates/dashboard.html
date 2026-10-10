@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — LibraryOS{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Library overview and key metrics{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="stats-grid" id="stats-grid">
+    <div class="stat-card" id="card-total-books">
+        <div class="stat-icon books-icon">📖</div>
+        <div class="stat-info">
+            <div class="stat-value" id="stat-total-books">—</div>
+            <div class="stat-label">Total Book Titles</div>
+        </div>
+    </div>
+    <div class="stat-card" id="card-total-copies">
+        <div class="stat-icon copies-icon">📚</div>
+        <div class="stat-info">
+            <div class="stat-value" id="stat-total-copies">—</div>
+            <div class="stat-label">Total Copies</div>
+        </div>
+    </div>
+    <div class="stat-card" id="card-available">
+        <div class="stat-icon available-icon">✅</div>
+        <div class="stat-info">
+            <div class="stat-value" id="stat-available">—</div>
+            <div class="stat-label">Available Copies</div>
+        </div>
+    </div>
+    <div class="stat-card" id="card-users">
+        <div class="stat-icon users-icon">👥</div>
+        <div class="stat-info">
+            <div class="stat-value" id="stat-users">—</div>
+            <div class="stat-label">Registered Users</div>
+        </div>
+    </div>
+    <div class="stat-card" id="card-active-loans">
+        <div class="stat-icon active-icon">🔄</div>
+        <div class="stat-info">
+            <div class="stat-value" id="stat-active-loans">—</div>
+            <div class="stat-label">Active Loans</div>
+        </div>
+    </div>
+    <div class="stat-card" id="card-returned">
+        <div class="stat-icon returned-icon">↩️</div>
+        <div class="stat-info">
+            <div class="stat-value" id="stat-returned">—</div>
+            <div class="stat-label">Returned Loans</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Action Rows -->
+<div class="dashboard-panels">
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Recent Books</h2>
+            <a href="/books" class="btn btn-sm btn-outline">View All →</a>
+        </div>
+        <div class="panel-body">
+            <div id="dashboard-books-table">
+                <div class="loading-state">Loading…</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Active Loans</h2>
+            <a href="/loans" class="btn btn-sm btn-outline">View All →</a>
+        </div>
+        <div class="panel-body">
+            <div id="dashboard-loans-table">
+                <div class="loading-state">Loading…</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadDashboard() {
+    const stats = await getDashboardData();
+    if (stats) {
+        document.getElementById('stat-total-books').textContent = stats.total_books ?? 0;
+        document.getElementById('stat-total-copies').textContent = stats.total_copies ?? 0;
+        document.getElementById('stat-available').textContent = stats.available_copies ?? 0;
+        document.getElementById('stat-users').textContent = stats.total_users ?? 0;
+        document.getElementById('stat-active-loans').textContent = stats.active_loans ?? 0;
+        document.getElementById('stat-returned').textContent = stats.returned_loans ?? 0;
+    }
+
+    // Recent books
+    const booksRes = await getBooks();
+    const booksCont = document.getElementById('dashboard-books-table');
+    if (booksRes && booksRes.length > 0) {
+        const rows = booksRes.slice(0, 5).map(b => `
+            <tr>
+                <td><span class="badge badge-secondary">${b.book_id}</span></td>
+                <td>${b.title}</td>
+                <td>${b.author}</td>
+                <td><span class="badge ${b.available_copies > 0 ? 'badge-success' : 'badge-danger'}">${b.available_copies > 0 ? 'Available' : 'Out of Stock'}</span></td>
+            </tr>`).join('');
+        booksCont.innerHTML = `<table class="data-table"><thead><tr><th>ID</th><th>Title</th><th>Author</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
+    } else {
+        booksCont.innerHTML = '<div class="empty-state">No books found</div>';
+    }
+
+    // Active loans
+    const loansRes = await getLoans();
+    const loansCont = document.getElementById('dashboard-loans-table');
+    const activeLoans = (loansRes || []).filter(l => l.status === 'ACTIVE');
+    if (activeLoans.length > 0) {
+        const rows = activeLoans.slice(0, 5).map(l => `
+            <tr>
+                <td><span class="badge badge-secondary">${l.loan_id}</span></td>
+                <td>${l.user_id}</td>
+                <td>${l.book_id}</td>
+                <td>${formatDate(l.borrowed_at)}</td>
+                <td><span class="badge badge-warning">ACTIVE</span></td>
+            </tr>`).join('');
+        loansCont.innerHTML = `<table class="data-table"><thead><tr><th>Loan ID</th><th>User</th><th>Book</th><th>Borrowed</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
+    } else {
+        loansCont.innerHTML = '<div class="empty-state">No active loans</div>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+{% endblock %}

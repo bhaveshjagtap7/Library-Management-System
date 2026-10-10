@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Users — LibraryOS{% endblock %}
+{% block page_title %}Users{% endblock %}
+{% block page_subtitle %}Manage library members and their accounts{% endblock %}
+
+{% block header_actions %}
+<button class="btn btn-primary" onclick="showAddUserModal()">+ Add User</button>
+{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <div class="search-bar">
+        <input type="text" id="user-search" class="search-input" placeholder="Filter by name, email, or ID…" oninput="filterUsers()">
+        <span class="search-icon">🔍</span>
+    </div>
+    <span id="user-count" class="record-count">Loading…</span>
+</div>
+
+<div class="panel">
+    <div class="panel-body">
+        <div id="users-table-container">
+            <div class="loading-state">Loading users…</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allUsers = [];
+
+async function loadUsers() {
+    const res = await getUsers();
+    allUsers = res || [];
+    renderUsersTable(allUsers);
+    document.getElementById('user-count').textContent = `${allUsers.length} record(s)`;
+}
+
+function filterUsers() {
+    const q = document.getElementById('user-search').value.toLowerCase();
+    const filtered = allUsers.filter(u =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.user_id.toLowerCase().includes(q) ||
+        u.role.toLowerCase().includes(q)
+    );
+    renderUsersTable(filtered);
+}
+
+function renderUsersTable(users) {
+    const container = document.getElementById('users-table-container');
+    if (!users || users.length === 0) {
+        container.innerHTML = '<div class="empty-state">No users found.</div>';
+        return;
+    }
+    const rows = users.map(u => `
+        <tr>
+            <td><span class="badge badge-secondary">${u.user_id}</span></td>
+            <td><strong>${escapeHtml(u.name)}</strong></td>
+            <td>${escapeHtml(u.email)}</td>
+            <td><span class="badge ${u.role === 'Faculty' ? 'badge-primary' : 'badge-info'}">${u.role}</span></td>
+            <td class="text-center">
+                <span class="badge ${u.active_loans > 0 ? 'badge-warning' : 'badge-success'}">${u.active_loans}</span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="confirmDeleteUser('${u.user_id}', '${escapeHtml(u.name)}', ${u.active_loans})"
+                    ${u.active_loans > 0 ? 'title="Cannot delete: user has active loans" style="opacity:0.5;cursor:not-allowed;"' : ''}>
+                    Delete
+                </button>
+            </td>
+        </tr>`).join('');
+    container.innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr><th>User ID</th><th>Name</th><th>Email</th><th>Role</th><th class="text-center">Active Loans</th><th>Actions</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+}
+
+function showAddUserModal() {
+    document.getElementById('form-modal-title').textContent = 'Add New User';
+    document.getElementById('form-modal-body').innerHTML = `
+        <div class="form-group">
+            <label class="form-label">User ID <span class="required">*</span></label>
+            <input type="text" class="form-input" id="fm-user-id" placeholder="e.g. U200">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Full Name <span class="required">*</span></label>
+            <input type="text" class="form-input" id="fm-name" placeholder="Full name">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Email <span class="required">*</span></label>
+            <input type="email" class="form-input" id="fm-email" placeholder="email@university.edu">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Role <span class="required">*</span></label>
+            <select class="form-input" id="fm-role">
+                <option value="Student">Student</option>
+                <option value="Faculty">Faculty</option>
+            </select>
+        </div>`;
+    document.getElementById('form-modal-submit').onclick = submitAddUser;
+    document.getElementById('form-modal-overlay').classList.remove('hidden');
+}
+
+async function submitAddUser() {
+    const user_id = document.getElementById('fm-user-id').value.trim();
+    const name = document.getElementById('fm-name').value.trim();
+    const email = document.getElementById('fm-email').value.trim();
+    const role = document.getElementById('fm-role').value;
+    if (!user_id || !name || !email) {
+        showToast('Please fill in all required fields.', 'error');
+        return;
+    }
+    const res = await addUser({ user_id, name, email, role });
+    if (res) {
+        closeFormModal();
+        showToast(`User "${name}" added successfully!`, 'success');
+        loadUsers();
+    }
+}
+
+function confirmDeleteUser(userId, name, activeLoans) {
+    if (activeLoans > 0) {
+        showToast(`Cannot delete "${name}": user has ${activeLoans} active loan(s).`, 'error');
+        return;
+    }
+    openConfirmModal(
+        'Delete User',
+        `Are you sure you want to delete user <strong>${name}</strong> (${userId})? This action cannot be undone.`,
+        async () => {
+            const res = await deleteUser(userId);
+            if (res !== null) {
+                closeModal();
+                showToast(`User "${name}" deleted.`, 'success');
+                loadUsers();
+            }
+        }
+    );
+}
+
+document.addEventListener('DOMContentLoaded', loadUsers);
+</script>
+{% endblock %}
