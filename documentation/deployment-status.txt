@@ -1,0 +1,57 @@
+DEPLOYMENT STATUS REPORT — DEVOPS MINI PROJECT 4
+================================================================================
+Project: Enterprise Library Management Platform
+Repository: https://github.com/bhaveshjagtap7/Library-Management-System
+Target Cloud: Amazon Web Services (AWS) ap-south-1 (Mumbai)
+IAM Identity: arn:aws:iam::029006055983:user/bhavesh-devops-deployer
+AWS Organization ID: o-86g05w7f4e
+Management Account ID: 021158484728
+
+STATUS: BLOCKED BY SERVICE CONTROL POLICY (SCP)
+--------------------------------------------------------------------------------
+Diagnosis:
+Terraform execution plan calculated 9 cloud resources to add:
+- aws_vpc.main (10.0.0.0/16)
+- aws_subnet.public (10.0.1.0/24)
+- aws_internet_gateway.gw
+- aws_route_table.public
+- aws_route_table_association.public
+- aws_security_group.web_sg (SSH port 22 restricted to 103.218.102.53/32)
+- aws_key_pair.generated_key (RSA 4096-bit)
+- aws_instance.library_app_server (t3.micro, Ubuntu 22.04 LTS)
+- local_file.private_key (ansible/inventory/id_rsa)
+
+Exact Blocker:
+During data source resolution for Canonical Ubuntu AMI (data.aws_ami.ubuntu),
+AWS returned:
+"UnauthorizedOperation: User: arn:aws:iam::029006055983:user/bhavesh-devops-deployer
+is not authorized to perform: ec2:DescribeImages with an explicit deny in a
+service control policy: arn:aws:organizations::021158484728:policy/o-86g05w7f4e/service_control_policy/p-qwhkfd7v"
+
+Root Cause:
+The AWS Organization management account (021158484728) has attached an SCP
+(p-qwhkfd7v) that explicitly denies EC2 DescribeImages or restricts permitted
+regions/services on member account 029006055983. Because an explicit deny in an
+SCP overrides all member-account IAM permissions, local IAM changes cannot
+bypass this restriction.
+
+Required Administrator Action to Unblock:
+1. Log into the AWS Organization management account: 021158484728.
+2. Navigate to AWS Organizations -> Policies -> Service control policies.
+3. Inspect policy p-qwhkfd7v.
+4. Either:
+   a. Allow ec2:DescribeImages in region ap-south-1 for account 029006055983, or
+   b. Detach policy p-qwhkfd7v from account 029006055983 / target OU.
+5. Once unblocked, rerun:
+   cd terraform
+   terraform plan
+   terraform apply
+
+Local Validation Status:
+- Application Baseline: PASSED (91 tests, 98% coverage)
+- Docker Multi-Stage Build: PASSED (Image size 184MB, Health probe status UP)
+- Terraform Syntax & Formatting: PASSED (terraform fmt & validate OK)
+- Security Hardening: PASSED (SSH restricted to 103.218.102.53/32, Port 5000 private)
+- Ansible Automation: STAGED (Git pull + build strategy on EC2)
+- Documentation: GENERATED (DevOps_Mini_Project_4_Final_Report.docx, 45 Pages)
+================================================================================

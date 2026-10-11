@@ -1,0 +1,27 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.9, pytest-8.3.2, pluggy-1.6.0
+rootdir: C:\Users\SAINATH\OneDrive\Desktop\Mini- Project\library-management-platform
+plugins: cov-5.0.0
+collected 91 items
+
+tests\test_api_endpoints.py ....................................         [ 39%]
+tests\test_book_service.py ...................                           [ 60%]
+tests\test_borrow_return.py .....................                        [ 83%]
+tests\test_user_service.py ...............                               [100%]
+
+---------- coverage: platform win32, python 3.13.9-final-0 -----------
+Name                              Stmts   Miss  Cover
+-----------------------------------------------------
+app\__init__.py                      11      0   100%
+app\models\__init__.py                0      0   100%
+app\models\book.py                   19      3    84%
+app\models\user.py                   19      1    95%
+app\routes\__init__.py                0      0   100%
+app\routes\api.py                    86      3    97%
+app\routes\frontend.py               14      0   100%
+app\services\__init__.py              0      0   100%
+app\services\library_service.py     132      0   100%
+-----------------------------------------------------
+TOTAL                               281      7    98%
+
+============================= 91 passed in 4.71s ==============================
