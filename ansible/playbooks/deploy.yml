@@ -1,0 +1,130 @@
+---
+- name: Deploy Enterprise Library Management Platform on AWS EC2
+  hosts: webservers
+  become: true
+  vars:
+    app_name: "library-management-system"
+    repo_url: "https://github.com/bhaveshjagtap7/Library-Management-System.git"
+    app_dir: "/opt/library-management-system"
+    container_port: 5000
+    host_bind_port: 5000
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install prerequisite system packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - nginx
+          - git
+          - python3-pip
+        state: present
+
+    - name: Add Docker official GPG apt key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker official APT repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker CE, CLI, and containerd
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker service is enabled and running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add remote user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Clone or pull application repository from GitHub
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        version: main
+        force: yes
+
+    - name: Build Docker image locally on EC2 instance
+      command: docker build -t {{ app_name }}:latest {{ app_dir }}
+      register: docker_build_result
+      changed_when: "'Successfully tagged' in docker_build_result.stdout or 'naming to' in docker_build_result.stdout"
+
+    - name: Deploy and run application container on loopback port
+      shell: |
+        docker stop {{ app_name }} || true
+        docker rm {{ app_name }} || true
+        docker run -d \
+          --name {{ app_name }} \
+          --restart always \
+          -p 127.0.0.1:{{ host_bind_port }}:{{ container_port }} \
+          -e PORT=5000 \
+          {{ app_name }}:latest
+      args:
+        executable: /bin/bash
+
+    - name: Deploy Nginx reverse proxy configuration
+      copy:
+        src: ../../nginx/library-management.conf
+        dest: /etc/nginx/sites-available/library-management.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable Nginx site configuration
+      file:
+        src: /etc/nginx/sites-available/library-management.conf
+        dest: /etc/nginx/sites-enabled/library-management.conf
+        state: link
+
+    - name: Remove default Nginx welcome site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Validate Nginx configuration syntax
+      command: nginx -t
+      register: nginx_test
+      changed_when: false
+
+    - name: Ensure Nginx is enabled on boot and restarted
+      service:
+        name: nginx
+        state: restarted
+        enabled: yes
+
+    - name: Perform automated health check probe on public port 80
+      uri:
+        url: "http://127.0.0.1/api/health"
+        status_code: 200
+        return_content: yes
+      register: health_result
+      until: health_result.status == 200
+      retries: 12
+      delay: 5
+
+    - name: Display deployment confirmation
+      debug:
+        msg: "Library Management Platform successfully deployed on EC2! Health check: {{ health_result.json }}"

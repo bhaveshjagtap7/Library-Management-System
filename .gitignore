@@ -35,3 +35,23 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+!terraform.tfvars.example
+override.tf
+override.tf.json
+
+# Ansible & SSH Keys
+**/id_rsa
+**/id_rsa.pub
+*.pem
+*.key
+.ansible/
+retry_files/
+scratch/

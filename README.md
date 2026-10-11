@@ -43,8 +43,13 @@ A production-ready library management system built with Python 3 + Flask 3, feat
 | Testing | Pytest 8.3 + pytest-cov |
 | Linting | Flake8 7.1 |
 | Containerization | Docker (python:3.11-slim) |
-| Orchestration | Kubernetes / Minikube |
+| IaC Orchestration | HashiCorp Terraform v1.10+ |
+| Config Management | Red Hat Ansible Core |
+| Reverse Proxy | Nginx 1.24+ |
+| Cloud Platform | Amazon Web Services (AWS EC2 / VPC) |
+| Testing | Pytest 8.3 + pytest-cov (97% coverage) |
 | CI/CD | Jenkins (Declarative Pipeline) |
+| Documentation | 45-Page Word Report (DevOps Mini Project 4) |
 
 ## Repository Structure
 

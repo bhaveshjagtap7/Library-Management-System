@@ -1,0 +1,6 @@
+aws_region       = "ap-south-1"
+project_name     = "library-management-system"
+environment      = "production"
+instance_type    = "t3.micro"
+ssh_allowed_cidr = "103.218.102.53/32"
+app_port         = 5000
