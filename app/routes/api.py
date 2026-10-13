@@ -152,6 +152,15 @@ def return_book():
     return jsonify(result), code
 
 
+@api_blueprint.route('/loans/<loan_id>/renew', methods=['POST'])
+def renew_loan(loan_id):
+    result = library_service.renew_loan(loan_id)
+    code = result.pop('code')
+    if not result.get('success'):
+        return jsonify({'error': result.get('error')}), code
+    return jsonify(result), code
+
+
 # ──────────────────────────── ERROR HANDLERS ─────────────────────────────────
 
 @api_blueprint.app_errorhandler(404)

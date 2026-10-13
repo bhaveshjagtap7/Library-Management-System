@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from database.db import db
 from app.models.user import User
 from app.models.book import Book
@@ -341,11 +341,17 @@ class LibraryService:
 
             # All checks passed — create the loan
             loan_id = db.next_loan_id()
+            now = datetime.now(timezone.utc)
+            loan_period_days = 30 if user.role == 'Faculty' else 14
+            due_at = (now + timedelta(days=loan_period_days)).isoformat()
+
             loan = {
                 'loan_id': loan_id,
                 'user_id': user_id,
                 'book_id': book_id,
-                'borrowed_at': datetime.now(timezone.utc).isoformat(),
+                'borrowed_at': now.isoformat(),
+                'due_at': due_at,
+                'renewal_count': 0,
                 'returned_at': None,
                 'status': 'ACTIVE',
             }
@@ -402,6 +408,50 @@ class LibraryService:
             user.active_loans = max(0, user.active_loans - 1)
 
             return {'success': True, 'loan': active_loan, 'code': 200}
+
+    def renew_loan(self, loan_id: str) -> dict:
+        """Renew an active loan, extending its due date (max 2 renewals)."""
+        with db.get_data_lock():
+            loan = db.loans.get(loan_id)
+            if not loan:
+                return {'success': False, 'error': f"Loan '{loan_id}' not found", 'code': 404}
+
+            if loan.get('status') != 'ACTIVE':
+                return {
+                    'success': False,
+                    'error': f"Cannot renew loan '{loan_id}': loan is {loan.get('status')}",
+                    'code': 400,
+                }
+
+            if loan.get('renewal_count', 0) >= 2:
+                return {
+                    'success': False,
+                    'error': f"Loan '{loan_id}' has reached maximum renewal limit of 2",
+                    'code': 409,
+                }
+
+            user = db.users.get(loan['user_id'])
+            extension_days = 30 if (user and user.role == 'Faculty') else 14
+
+            current_due = loan.get('due_at')
+            if current_due:
+                try:
+                    dt = datetime.fromisoformat(current_due)
+                    new_due = (dt + timedelta(days=extension_days)).isoformat()
+                except Exception:
+                    new_due = (datetime.now(timezone.utc) + timedelta(days=extension_days)).isoformat()
+            else:
+                new_due = (datetime.now(timezone.utc) + timedelta(days=extension_days)).isoformat()
+
+            loan['renewal_count'] = loan.get('renewal_count', 0) + 1
+            loan['due_at'] = new_due
+
+            return {
+                'success': True,
+                'message': f"Loan '{loan_id}' renewed successfully",
+                'loan': loan,
+                'code': 200,
+            }
 
     def get_dashboard_stats(self) -> dict:
         """Aggregate statistics for the dashboard."""

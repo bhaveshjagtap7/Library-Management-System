@@ -180,3 +180,50 @@ class TestReturnBook:
         bt = datetime.fromisoformat(loan['borrowed_at'])
         rt = datetime.fromisoformat(loan['returned_at'])
         assert rt >= bt
+
+
+class TestRenewLoan:
+    def test_borrow_creates_due_at(self, svc):
+        res = svc.borrow_book('U101', 'B001')
+        assert res['success'] is True
+        loan = res['loan']
+        assert 'due_at' in loan
+        assert loan['due_at'] is not None
+        assert loan['renewal_count'] == 0
+
+    def test_renew_loan_success(self, svc):
+        res = svc.borrow_book('U101', 'B001')
+        loan_id = res['loan']['loan_id']
+        old_due = res['loan']['due_at']
+
+        renew_res = svc.renew_loan(loan_id)
+        assert renew_res['success'] is True
+        assert renew_res['code'] == 200
+        assert renew_res['loan']['renewal_count'] == 1
+        assert renew_res['loan']['due_at'] > old_due
+
+    def test_renew_loan_max_limit_exceeded(self, svc):
+        res = svc.borrow_book('U101', 'B001')
+        loan_id = res['loan']['loan_id']
+        # Renew 1
+        svc.renew_loan(loan_id)
+        # Renew 2
+        svc.renew_loan(loan_id)
+        # Renew 3 (should fail with 409)
+        third = svc.renew_loan(loan_id)
+        assert third['success'] is False
+        assert third['code'] == 409
+        assert 'maximum renewal limit' in third['error']
+
+    def test_renew_returned_loan_rejected(self, svc):
+        res = svc.borrow_book('U101', 'B001')
+        loan_id = res['loan']['loan_id']
+        svc.return_book('U101', 'B001')
+        renew_res = svc.renew_loan(loan_id)
+        assert renew_res['success'] is False
+        assert renew_res['code'] == 400
+
+    def test_renew_nonexistent_loan(self, svc):
+        renew_res = svc.renew_loan('NONEXISTENT')
+        assert renew_res['success'] is False
+        assert renew_res['code'] == 404
