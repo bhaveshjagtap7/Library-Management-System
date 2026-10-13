@@ -475,6 +475,24 @@ class LibraryService:
                 'returned_loans': returned_loans,
             }
 
+    def export_system_data(self) -> dict:
+        """Export comprehensive system snapshot for backup and auditing."""
+        with db.get_data_lock():
+            return {
+                'success': True,
+                'version': '1.0.0',
+                'exported_at': datetime.now(timezone.utc).isoformat(),
+                'users': [u.to_dict() for u in db.users.values()],
+                'books': [b.to_dict() for b in db.books.values()],
+                'loans': list(db.loans.values()),
+                'stats': {
+                    'total_books': len(db.books),
+                    'total_users': len(db.users),
+                    'total_loans': len(db.loans),
+                },
+                'code': 200,
+            }
+
 
 # Module-level service instance
 library_service = LibraryService()

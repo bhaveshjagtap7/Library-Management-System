@@ -12,7 +12,7 @@
 [![Ansible](https://img.shields.io/badge/Ansible-Config%20Management-EE0000?style=for-the-badge&logo=ansible&logoColor=white)](https://www.ansible.com/)
 [![Nginx](https://img.shields.io/badge/Nginx-Reverse%20Proxy-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
 [![Coverage](https://img.shields.io/badge/Test%20Coverage-97%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
-[![Tests](https://img.shields.io/badge/Pytest-91%20Passed-success?style=for-the-badge&logo=checkmarx&logoColor=white)](tests/)
+[![Tests](https://img.shields.io/badge/Pytest-117%20Passed-success?style=for-the-badge&logo=checkmarx&logoColor=white)](tests/)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Flake8-black?style=for-the-badge)](setup.cfg)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
@@ -130,19 +130,17 @@
 
 The Jenkins declarative pipeline executes 6 rigorous automation stages on every code push:
 
-```mermaid
-graph LR
-    A[1. SCM Checkout] --> B[2. Setup & Deps]
-    B --> C[3. Flake8 Lint Gate]
-    C --> D[4. Pytest & Coverage]
-    D --> E[5. Docker Build]
-    E --> F[6. Kubernetes Rollout]
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│ 1. SCM       │ ──► │ 2. Setup &   │ ──► │ 3. Flake8    │ ──► │ 4. Pytest &  │ ──► │ 5. Docker    │ ──► │ 6. K8s       │
+│    Checkout  │     │    Deps      │     │    Lint Gate │     │    Coverage  │     │    Artifact  │     │    Rollout   │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
 1. **SCM Checkout** — Clones and synchronizes code from GitHub.
 2. **Environment Setup & Dependencies** — Configures Python virtual environment and installs dependencies (`pip install -r requirements.txt`).
 3. **Code Linting & Syntax Gate** — Runs Flake8 across all modules; fails the build immediately if PEP 8 violations occur.
-4. **Automated Testing & Coverage** — Runs 91 Pytest test cases, generates JUnit XML reports (`reports/test-results.xml`), and produces HTML coverage artifacts.
+4. **Automated Testing & Coverage** — Runs 117 Pytest test cases, generates JUnit XML reports (`reports/test-results.xml`), and produces HTML coverage artifacts.
 5. **Docker Artifact Build** — Builds multi-stage production Docker image tagged with `BUILD_NUMBER`.
 6. **Kubernetes Rollout & Verification** — Applies Kubernetes manifests to Minikube cluster and monitors rollout status until all 3 replicas report healthy.
 
@@ -424,16 +422,22 @@ All responses return standard JSON envelopes.
 |:-------|:---------|:------------|:------------|
 | `GET` | `/api/health` | Service health status and version info | `200 OK` |
 | `GET` | `/api/dashboard` | Aggregated catalog, user, and loan statistics | `200 OK` |
+| `GET` | `/api/system/export` | Export full system snapshot for backup and auditing | `200 OK` |
 | `GET` | `/api/books` | List books (supports `?q=<term>` query filter) | `200 OK` |
 | `POST` | `/api/books` | Register a new book in the catalog | `201 Created` |
 | `GET` | `/api/books/<book_id>` | Retrieve book details by ID | `200 OK` / `404` |
+| `PUT` | `/api/books/<book_id>` | Update existing book metadata (title, author, copies) | `200 OK` / `400` / `404` |
+| `DELETE` | `/api/books/<book_id>` | Delete book (guarded against active loans) | `200 OK` / `409` / `404` |
 | `GET` | `/api/users` | List all registered library patrons | `200 OK` |
 | `POST` | `/api/users` | Register a new student or faculty member | `201 Created` |
 | `GET` | `/api/users/<user_id>` | Retrieve user details and loan status | `200 OK` / `404` |
-| `DELETE` | `/api/users/<user_id>` | Delete user (blocked if active loans exist) | `200 OK` / `400` |
+| `PUT` | `/api/users/<user_id>` | Update user profile (name, email, role) | `200 OK` / `400` / `404` |
+| `GET` | `/api/users/<user_id>/loans` | Retrieve all loans for a specific user | `200 OK` / `404` |
+| `DELETE` | `/api/users/<user_id>` | Delete user (blocked if active loans exist) | `200 OK` / `409` / `404` |
 | `GET` | `/api/loans` | View complete loan ledger (active and returned) | `200 OK` |
-| `POST` | `/api/borrow` | Check out a book to a user | `201 Created` / `400` |
-| `POST` | `/api/return` | Return a borrowed book to inventory | `200 OK` / `400` |
+| `POST` | `/api/borrow` | Check out a book (auto-assigns due date) | `201 Created` / `400` / `409` |
+| `POST` | `/api/return` | Return a borrowed book to inventory | `200 OK` / `404` |
+| `POST` | `/api/loans/<loan_id>/renew` | Renew active loan (extends due date, max 2 renewals) | `200 OK` / `400` / `409` |
 
 <details>
 <summary><strong>🔍 Click to view Sample API Requests & JSON Responses</strong></summary>

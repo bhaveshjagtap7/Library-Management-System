@@ -23,6 +23,13 @@ def dashboard_stats():
     return jsonify(stats), 200
 
 
+@api_blueprint.route('/system/export', methods=['GET'])
+def export_system():
+    result = library_service.export_system_data()
+    code = result.pop('code')
+    return jsonify(result), code
+
+
 # ──────────────────────────── USERS ──────────────────────────────────────────
 
 @api_blueprint.route('/users', methods=['POST'])

@@ -30,6 +30,10 @@ def delete(client, url):
     return client.delete(url)
 
 
+def put_json(client, url, data):
+    return client.put(url, data=json.dumps(data), content_type='application/json')
+
+
 class TestHealthEndpoint:
     def test_health_returns_200(self, client):
         r = client.get('/api/health')
@@ -254,3 +258,43 @@ class TestFrontendRoutes:
     def test_loans_page_loads(self, client):
         r = client.get('/loans')
         assert r.status_code == 200
+
+
+class TestExtendedApiEndpoints:
+    def test_put_book_api(self, client):
+        r = put_json(client, '/api/books/B001', {'title': 'Updated Title Via API'})
+        assert r.status_code == 200
+        assert r.get_json()['book']['title'] == 'Updated Title Via API'
+
+    def test_delete_book_api(self, client):
+        r = delete(client, '/api/books/B002')
+        assert r.status_code == 200
+        assert r.get_json()['success'] is True
+
+    def test_put_user_api(self, client):
+        r = put_json(client, '/api/users/U101', {'name': 'Updated Alice'})
+        assert r.status_code == 200
+        assert r.get_json()['user']['name'] == 'Updated Alice'
+
+    def test_get_user_loans_api(self, client):
+        r = client.get('/api/users/U101/loans')
+        assert r.status_code == 200
+        assert 'loans' in r.get_json()
+
+    def test_renew_loan_api(self, client):
+        post_json(client, '/api/borrow', {'user_id': 'U101', 'book_id': 'B001'})
+        r_loans = client.get('/api/loans').get_json()['loans']
+        loan_id = r_loans[0]['loan_id']
+        r = client.post(f'/api/loans/{loan_id}/renew')
+        assert r.status_code == 200
+        assert r.get_json()['loan']['renewal_count'] == 1
+
+    def test_system_export_api(self, client):
+        r = client.get('/api/system/export')
+        assert r.status_code == 200
+        data = r.get_json()
+        assert data['version'] == '1.0.0'
+        assert 'users' in data
+        assert 'books' in data
+        assert 'loans' in data
+        assert 'stats' in data
