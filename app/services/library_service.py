@@ -167,6 +167,80 @@ class LibraryService:
                 ]
             return {'success': True, 'books': books, 'code': 200}
 
+    def update_book(self, book_id: str, data: dict) -> dict:
+        """Update existing book details (title, author, isbn, total_copies)."""
+        with db.get_data_lock():
+            book = db.books.get(book_id)
+            if not book:
+                return {'success': False, 'error': f"Book '{book_id}' not found", 'code': 404}
+
+            if 'title' in data:
+                new_title = (data.get('title') or '').strip()
+                if not new_title:
+                    return {'success': False, 'error': 'title cannot be empty', 'code': 400}
+                book.title = new_title
+
+            if 'author' in data:
+                new_author = (data.get('author') or '').strip()
+                if not new_author:
+                    return {'success': False, 'error': 'author cannot be empty', 'code': 400}
+                book.author = new_author
+
+            if 'isbn' in data:
+                new_isbn = (data.get('isbn') or '').strip()
+                if not new_isbn:
+                    return {'success': False, 'error': 'isbn cannot be empty', 'code': 400}
+                book.isbn = new_isbn
+
+            if 'total_copies' in data:
+                try:
+                    new_total = int(data['total_copies'])
+                except (TypeError, ValueError):
+                    return {'success': False, 'error': 'total_copies must be an integer', 'code': 400}
+
+                borrowed_copies = book.total_copies - book.available_copies
+                if new_total < borrowed_copies:
+                    return {
+                        'success': False,
+                        'error': (
+                            f"total_copies ({new_total}) cannot be less than "
+                            f"active borrowed copies ({borrowed_copies})"
+                        ),
+                        'code': 400,
+                    }
+                if new_total < 1:
+                    return {'success': False, 'error': 'total_copies must be at least 1', 'code': 400}
+
+                diff = new_total - book.total_copies
+                book.total_copies = new_total
+                book.available_copies += diff
+
+            return {'success': True, 'book': book.to_dict(), 'code': 200}
+
+    def delete_book(self, book_id: str) -> dict:
+        """Delete a book from catalog only if no copies are actively borrowed."""
+        with db.get_data_lock():
+            book = db.books.get(book_id)
+            if not book:
+                return {'success': False, 'error': f"Book '{book_id}' not found", 'code': 404}
+
+            active_loans = sum(
+                1 for ln in db.loans.values()
+                if ln['book_id'] == book_id and ln['status'] == 'ACTIVE'
+            )
+            if active_loans > 0:
+                return {
+                    'success': False,
+                    'error': (
+                        f"Cannot delete book '{book_id}': "
+                        f"{active_loans} copy/copies currently on active loan"
+                    ),
+                    'code': 409,
+                }
+
+            del db.books[book_id]
+            return {'success': True, 'message': f"Book '{book_id}' deleted successfully", 'code': 200}
+
     def get_all_loans(self) -> dict:
         """Return all loan records."""
         with db.get_data_lock():

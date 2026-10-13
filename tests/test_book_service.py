@@ -167,3 +167,66 @@ class TestSearchBooks:
         result = library_service.search_books('humble')
         assert result['success'] is True
         assert any(b['book_id'] == 'B002' for b in result['books'])
+
+
+class TestUpdateBook:
+    def test_update_book_title_and_author(self):
+        from app.services.library_service import library_service
+        result = library_service.update_book('B001', {'title': 'Updated Title', 'author': 'New Author'})
+        assert result['success'] is True
+        assert result['code'] == 200
+        assert result['book']['title'] == 'Updated Title'
+        assert result['book']['author'] == 'New Author'
+
+    def test_update_book_not_found(self):
+        from app.services.library_service import library_service
+        result = library_service.update_book('NONEXISTENT', {'title': 'New'})
+        assert result['success'] is False
+        assert result['code'] == 404
+
+    def test_update_book_empty_title_error(self):
+        from app.services.library_service import library_service
+        result = library_service.update_book('B001', {'title': '   '})
+        assert result['success'] is False
+        assert result['code'] == 400
+
+    def test_update_book_total_copies(self):
+        from app.services.library_service import library_service
+        result = library_service.update_book('B001', {'total_copies': 10})
+        assert result['success'] is True
+        assert result['book']['total_copies'] == 10
+        assert result['book']['available_copies'] == 10
+
+    def test_update_book_invalid_copies_format(self):
+        from app.services.library_service import library_service
+        result = library_service.update_book('B001', {'total_copies': 'invalid'})
+        assert result['success'] is False
+        assert result['code'] == 400
+
+
+class TestDeleteBook:
+    def test_delete_book_success(self):
+        from app.services.library_service import library_service
+        result = library_service.delete_book('B002')
+        assert result['success'] is True
+        assert result['code'] == 200
+        # Verify it cannot be found anymore
+        check = library_service.get_book('B002')
+        assert check['code'] == 404
+
+    def test_delete_book_not_found(self):
+        from app.services.library_service import library_service
+        result = library_service.delete_book('NONEXISTENT')
+        assert result['success'] is False
+        assert result['code'] == 404
+
+    def test_delete_book_with_active_loans_prevented(self):
+        from app.services.library_service import library_service
+        # Borrow B001 first
+        borrow_res = library_service.borrow_book('U101', 'B001')
+        assert borrow_res['success'] is True
+        # Try to delete B001
+        del_res = library_service.delete_book('B001')
+        assert del_res['success'] is False
+        assert del_res['code'] == 409
+        assert 'active loan' in del_res['error']

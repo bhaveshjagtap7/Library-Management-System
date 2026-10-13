@@ -79,6 +79,21 @@ def get_book(book_id):
     return jsonify(result), code
 
 
+@api_blueprint.route('/books/<book_id>', methods=['PUT'])
+def update_book(book_id):
+    data = request.get_json(silent=True) or {}
+    result = library_service.update_book(book_id, data)
+    code = result.pop('code')
+    return jsonify(result), code
+
+
+@api_blueprint.route('/books/<book_id>', methods=['DELETE'])
+def delete_book(book_id):
+    result = library_service.delete_book(book_id)
+    code = result.pop('code')
+    return jsonify(result), code
+
+
 # ──────────────────────────── LOANS ──────────────────────────────────────────
 
 @api_blueprint.route('/loans', methods=['GET'])
