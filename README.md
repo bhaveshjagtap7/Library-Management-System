@@ -1,356 +1,549 @@
-# 📚 Enterprise Smart Library Management Platform
+<div align="center">
 
-A production-ready library management system built with Python 3 + Flask 3, featuring a full REST API, interactive web dashboard, automated tests, Docker containerization, Kubernetes orchestration, and a Jenkins CI/CD pipeline.
+# 📚 Enterprise Smart Library Management Platform
+### Cloud-Native DevOps Architecture • Microservices-Ready Flask 3 Core • Containerized & Automated
+
+[![Python Version](https://img.shields.io/badge/Python-3.11%20%7C%203.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0.3-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-3%20Replicas-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD%20Pipeline-D24939?style=for-the-badge&logo=jenkins&logoColor=white)](https://www.jenkins.io/)
+[![Terraform](https://img.shields.io/badge/Terraform-AWS%20IaC-844FBA?style=for-the-badge&logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![Ansible](https://img.shields.io/badge/Ansible-Config%20Management-EE0000?style=for-the-badge&logo=ansible&logoColor=white)](https://www.ansible.com/)
+[![Nginx](https://img.shields.io/badge/Nginx-Reverse%20Proxy-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
+[![Coverage](https://img.shields.io/badge/Test%20Coverage-97%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
+[![Tests](https://img.shields.io/badge/Pytest-91%20Passed-success?style=for-the-badge&logo=checkmarx&logoColor=white)](tests/)
+[![Code Style](https://img.shields.io/badge/Code%20Style-Flake8-black?style=for-the-badge)](setup.cfg)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+
+<br/>
+
+**A production-ready, full-stack library management system featuring a responsive SaaS UI, REST API, automated test suites (97% code coverage), multi-stage Docker containerization, Kubernetes rolling updates, Jenkins CI/CD pipeline, AWS Terraform IaC, and Ansible automation.**
+
+[Explore Features](#-key-features) • [System Architecture](#-system-architecture) • [Quickstart](#-quickstart-guide) • [DevOps Pipeline](#-cicd-pipeline-jenkins) • [IaC & Automation](#-infrastructure-as-code--automation) • [API Documentation](#-rest-api-reference)
 
 ---
 
-## Architecture
+</div>
+
+## 📸 Platform Showcase
+
+<div align="center">
+  <img src="documentation/screenshots/33-browser-web-dashboard-overview.png" alt="Library Web Dashboard" width="900" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+  <p><em>Enterprise Web Dashboard with Real-Time Catalog Analytics, User Counts, and Loan Statuses</em></p>
+</div>
+
+<br/>
+
+<table align="center" width="100%">
+  <tr>
+    <td width="50%" align="center">
+      <strong>📖 Interactive Books Catalog</strong><br/><br/>
+      <img src="documentation/screenshots/34-browser-books-catalog-view.png" alt="Books Catalog" width="440" />
+    </td>
+    <td width="50%" align="center">
+      <strong>👥 User & Membership Management</strong><br/><br/>
+      <img src="documentation/screenshots/36-browser-user-management-view.png" alt="User Management" width="440" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>🔄 Borrow & Return Operations</strong><br/><br/>
+      <img src="documentation/screenshots/37-browser-borrow-return-loans.png" alt="Borrow and Return Loans" width="440" />
+    </td>
+    <td width="50%" align="center">
+      <strong>➕ Dynamic Book Addition Modal</strong><br/><br/>
+      <img src="documentation/screenshots/35-browser-add-book-modal.png" alt="Add Book Modal" width="440" />
+    </td>
+  </tr>
+</table>
+
+---
+
+## 🌟 Key Features
+
+### 💻 Application Core
+- **Intuitive Web Interface** — Clean responsive frontend with Jinja2 templates, modern CSS tokens, dynamic modal dialogs, and real-time metric cards.
+- **RESTful API** — 12 modular endpoints following HTTP status semantics (`200 OK`, `201 Created`, `400 Bad Request`, `404 Not Found`, `409 Conflict`).
+- **Thread-Safe Data Layer** — In-memory persistence engine with threading lock primitives preventing concurrent race conditions.
+- **Strict Business Logic Guards**:
+  - Role-based borrowing limits: **Students max 3 books**, **Faculty max 5 books**.
+  - Negative inventory prevention — Prevents checkout when available copies reach `0`.
+  - Referential integrity check — Blocks deletion of users who currently possess unreturned books.
+  - Duplicate book and user identity collision detection.
+
+### 🛡️ DevOps & Cloud Infrastructure
+- **Automated Testing Suite** — 91 comprehensive unit, integration, and API tests delivering **97% code coverage**.
+- **Static Analysis Gate** — Flake8 strict syntax and PEP 8 compliance checks integrated into the CI/CD pipeline.
+- **Production Containerization** — Multi-stage Docker build utilizing non-root security context (`appuser:10001`) and integrated curl health probes.
+- **High-Availability Kubernetes** — 3-replica Deployment with rolling updates, zero downtime, resource limits, and readiness/liveness probes.
+- **Continuous Integration & Delivery** — 6-stage declarative Jenkins pipeline executing end-to-end checkout, linting, testing, Docker build, and K8s rollout.
+- **Infrastructure as Code (Terraform)** — Automated provisioning of AWS VPC, public subnets, route tables, internet gateways, security groups, and EC2 compute.
+- **Configuration Management (Ansible)** — Reusable, idempotent playbooks configuring Docker runtimes, Gunicorn WSGI daemons, and Nginx reverse proxies.
+
+---
+
+## 🏛️ System Architecture
+
+<div align="center">
+  <img src="documentation/figures/fig1_system_architecture.png" alt="System Architecture Diagram" width="850" />
+</div>
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Flask Application                        │
-│  ┌────────────┐  ┌──────────────┐  ┌────────────────────┐  │
-│  │  Frontend  │  │  REST API    │  │  Library Service   │  │
-│  │  (Jinja2)  │  │  Blueprint   │  │  (Business Logic)  │  │
-│  └────────────┘  └──────────────┘  └────────────────────┘  │
-│                                    ┌────────────────────┐  │
-│                                    │  Thread-safe DB    │  │
-│                                    │  (In-memory)       │  │
-│                                    └────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                CLIENT LAYER                                     │
+│          Web Browser (UI)        │       REST API Consumers (curl / Postman)    │
+└──────────────────────────────────┬──────────────────────────────────────────────┘
+                                   │ HTTP (Port 80 / 5000 / 30080)
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            REVERSE PROXY & INGRESS                              │
+│             Nginx Reverse Proxy (Rate Limiting, Gzip, Security Headers)         │
+└──────────────────────────────────┬──────────────────────────────────────────────┘
+                                   │ Reverse Proxy Forwarding
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                      KUBERNETES ORCHESTRATION CLUSTER                           │
+│  Service: library-service (NodePort 30080 -> Port 5000)                        │
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌──────────────────┐ │
+│  │   Pod 1 (appuser)       │  │   Pod 2 (appuser)       │  │   Pod 3 (appuser)│ │
+│  │  - Flask 3 Application  │  │  - Flask 3 Application  │  │  - Flask 3 App   │ │
+│  │  - Gunicorn WSGI        │  │  - Gunicorn WSGI        │  │  - Gunicorn WSGI │ │
+│  │  - Health Probe (/api)  │  │  - Health Probe (/api)  │  │  - Health Probe  │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └──────────────────┘ │
+└──────────────────────────────────┬──────────────────────────────────────────────┘
+                                   │ Thread-safe Memory Engine
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        DATA & BUSINESS LOGIC LAYER                              │
+│    LibraryService ──► Business Guards ──► Thread-Safe Singleton In-Memory DB    │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Features
+---
 
-- **Book Catalog** — Add, search (title/author/ISBN), view, borrow
-- **User Management** — Add students/faculty, delete (only if no active loans)
-- **Loan Tracking** — Borrow/return with full history, status badges
-- **Business Rules** — Student max 3 loans, Faculty max 5, inventory guards
-- **Dashboard** — Live stats: total books, copies, users, active/returned loans
-- **REST API** — 12 endpoints with proper HTTP codes and JSON responses
-- **Automated Tests** — 91 tests, 97% coverage
-- **Docker** — Multi-stage build, non-root user, health check
-- **Kubernetes** — 3 replicas, RollingUpdate, liveness/readiness probes
-- **Jenkins** — 5-stage declarative pipeline
+## 🔄 CI/CD Pipeline (Jenkins)
 
-## Technology Stack
+<div align="center">
+  <img src="documentation/figures/fig2_devops_workflow.png" alt="DevOps Workflow Diagram" width="850" />
+</div>
 
-| Component | Technology |
-|-----------|-----------|
-| Language | Python 3 (3.11+ recommended) |
-| Web Framework | Flask 3.0.3 |
-| WSGI | Gunicorn 22.0 |
-| Testing | Pytest 8.3 + pytest-cov |
-| Linting | Flake8 7.1 |
-| Containerization | Docker (python:3.11-slim) |
-| IaC Orchestration | HashiCorp Terraform v1.10+ |
-| Config Management | Red Hat Ansible Core |
-| Reverse Proxy | Nginx 1.24+ |
-| Cloud Platform | Amazon Web Services (AWS EC2 / VPC) |
-| Testing | Pytest 8.3 + pytest-cov (97% coverage) |
-| CI/CD | Jenkins (Declarative Pipeline) |
-| Documentation | 45-Page Word Report (DevOps Mini Project 4) |
+The Jenkins declarative pipeline executes 6 rigorous automation stages on every code push:
 
-## Repository Structure
+```mermaid
+graph LR
+    A[1. SCM Checkout] --> B[2. Setup & Deps]
+    B --> C[3. Flake8 Lint Gate]
+    C --> D[4. Pytest & Coverage]
+    D --> E[5. Docker Build]
+    E --> F[6. Kubernetes Rollout]
+```
+
+1. **SCM Checkout** — Clones and synchronizes code from GitHub.
+2. **Environment Setup & Dependencies** — Configures Python virtual environment and installs dependencies (`pip install -r requirements.txt`).
+3. **Code Linting & Syntax Gate** — Runs Flake8 across all modules; fails the build immediately if PEP 8 violations occur.
+4. **Automated Testing & Coverage** — Runs 91 Pytest test cases, generates JUnit XML reports (`reports/test-results.xml`), and produces HTML coverage artifacts.
+5. **Docker Artifact Build** — Builds multi-stage production Docker image tagged with `BUILD_NUMBER`.
+6. **Kubernetes Rollout & Verification** — Applies Kubernetes manifests to Minikube cluster and monitors rollout status until all 3 replicas report healthy.
+
+---
+
+## 🛠️ Technology Stack
+
+| Domain | Technology | Purpose |
+|:-------|:-----------|:--------|
+| **Core Backend** | Python 3.11+ / Flask 3.0.3 | High-performance application framework with Blueprint routing |
+| **WSGI Server** | Gunicorn 22.0 | Production-grade WSGI HTTP Server |
+| **Frontend** | HTML5, Jinja2, Vanilla CSS3, JS | Modern responsive SaaS interface and dynamic dashboard widgets |
+| **Unit & Integration Testing** | Pytest 8.3 + pytest-cov | Automated test execution and code coverage reporting |
+| **Linting & Code Quality** | Flake8 7.1 | Strict PEP 8 enforcement and syntax verification |
+| **Containerization** | Docker (python:3.11-slim) | Multi-stage, non-root hardened container runtime |
+| **Container Orchestration** | Kubernetes v1.28+ (Minikube) | Multi-replica Deployment, RollingUpdate strategy, self-healing |
+| **CI/CD Automation** | Jenkins Declarative Pipeline | End-to-end automated testing, container build, and deployment |
+| **Infrastructure as Code** | HashiCorp Terraform v1.10+ | Declarative AWS cloud infrastructure provisioning (VPC, EC2, SG) |
+| **Configuration Management** | Red Hat Ansible Core 2.16+ | Idempotent system orchestration, Nginx proxy, and service deployment |
+| **Web Server / Proxy** | Nginx 1.24+ | Reverse proxy, static asset delivery, and HTTP header hardening |
+| **Cloud Provider** | Amazon Web Services (AWS) | EC2, VPC, Internet Gateway, Security Groups, IAM |
+
+---
+
+## 📁 Repository Structure
 
 ```
 library-management-platform/
 ├── app/
-│   ├── __init__.py          # Application factory (create_app)
+│   ├── __init__.py               # Flask application factory (create_app)
 │   ├── routes/
-│   │   ├── api.py           # REST API blueprint (/api/*)
-│   │   └── frontend.py      # Frontend page routes
+│   │   ├── api.py                # REST API blueprint (/api/* endpoints)
+│   │   └── frontend.py           # Web UI page routes & template rendering
 │   ├── services/
-│   │   └── library_service.py  # All business logic
+│   │   └── library_service.py   # Encapsulated core business logic & rules
 │   ├── models/
-│   │   ├── book.py          # Book dataclass
-│   │   └── user.py          # User dataclass
-│   └── templates/           # Jinja2 HTML templates
-│       ├── base.html
-│       ├── dashboard.html
-│       ├── books.html
-│       ├── users.html
-│       └── loans.html
+│   │   ├── book.py               # Book entity dataclass
+│   │   └── user.py               # User entity dataclass
+│   └── templates/                # Jinja2 HTML templates
+│       ├── base.html             # Base layout with navigation and footer
+│       ├── dashboard.html        # Main dashboard with live statistics
+│       ├── books.html            # Book catalog and search interface
+│       ├── users.html            # User directory and registration modal
+│       └── loans.html            # Borrow / return transaction view
 ├── database/
-│   └── db.py                # Thread-safe singleton in-memory DB
+│   └── db.py                     # Thread-safe singleton in-memory database
 ├── tests/
-│   ├── test_user_service.py
-│   ├── test_book_service.py
-│   ├── test_borrow_return.py
-│   └── test_api_endpoints.py
+│   ├── conftest.py               # Shared pytest fixtures & test client setup
+│   ├── test_book_service.py      # Book service unit test suite
+│   ├── test_user_service.py      # User service unit test suite
+│   ├── test_borrow_return.py     # Loan management and rule guard tests
+│   └── test_api_endpoints.py     # Full REST API integration tests
 ├── k8s/
-│   ├── deployment.yaml      # 3-replica Deployment + probes
-│   └── service.yaml         # NodePort service (port 30080)
+│   ├── deployment.yaml           # 3-replica Deployment with probes & limits
+│   └── service.yaml              # NodePort service definition (port 30080)
+├── terraform/
+│   ├── main.tf                   # AWS VPC, Subnet, EC2, Security Groups
+│   ├── variables.tf              # Input variable specifications
+│   ├── outputs.tf                # Public IP, VPC ID, and DNS outputs
+│   └── terraform.tfvars.example  # Sample variable assignment configuration
+├── ansible/
+│   ├── ansible.cfg               # Ansible runtime configuration
+│   ├── inventory/hosts.ini       # Target host inventory definitions
+│   └── playbooks/deploy.yml      # Orchestration playbook (Docker, Nginx, App)
+├── nginx/
+│   └── library-management.conf   # Production Nginx reverse proxy configuration
+├── documentation/                # Reports, screenshots, and visual assets
+│   ├── figures/                  # High-resolution architectural figures
+│   ├── screenshots/              # 48 detailed execution & verification captures
+│   └── generate_word_report.py   # Automated 45-page documentation generator
+├── reports/                      # JUnit XML test results & coverage reports
 ├── static/
-│   ├── css/style.css
-│   └── js/app.js
-├── reports/                 # JUnit XML + coverage HTML
-├── Jenkinsfile              # 5-stage CI/CD pipeline
-├── Dockerfile               # Multi-stage, non-root
-├── .dockerignore
-├── .gitignore
-├── requirements.txt
-├── setup.cfg                # Flake8 configuration
-├── run.py                   # Entry point
-└── README.md
+│   ├── css/style.css             # Glassmorphism theme & UI styling
+│   └── js/app.js                 # Frontend interactions & API calls
+├── Dockerfile                    # Multi-stage hardened Docker image build
+├── Jenkinsfile                   # Declarative 6-stage CI/CD pipeline script
+├── requirements.txt              # Production and test Python dependencies
+├── setup.cfg                     # Flake8 linting rule configuration
+├── run.py                        # Local development server entrypoint
+└── README.md                     # Comprehensive project documentation
 ```
 
 ---
 
-## Local Installation
+## 🚀 Quickstart Guide
 
 ### Prerequisites
-- Python 3.11+ (or 3.14+ works too)
-- Git
+- **Python 3.11+**
+- **Git**
+- Optional for containerization: **Docker Desktop**, **Minikube**, **kubectl**
 
-### Setup
+### 1. Clone Repository & Setup Environment
 
 ```bash
-git clone <repo-url>
-cd library-management-platform
+# Clone the repository
+git clone https://github.com/bhaveshjagtap7/Library-Management-System.git
+cd Library-Management-System
 
-# Create and activate virtual environment
+# Create virtual environment
 python -m venv .venv
 
-# Windows
+# Activate environment
+# On Windows:
 .venv\Scripts\activate
-
-# Linux/macOS
+# On Linux / macOS:
 source .venv/bin/activate
 
-# Install dependencies
+# Install all dependencies
 pip install -r requirements.txt
 ```
 
-### Run the Application
+### 2. Run Application Locally
 
 ```bash
 python run.py
 ```
 
-Open your browser: **http://localhost:5000**
+The application starts at: **http://localhost:5000**
+
+| Endpoint / Page | URL | Purpose |
+|:----------------|:----|:--------|
+| **Web Dashboard** | `http://localhost:5000/` | Analytics & system summary |
+| **Catalog** | `http://localhost:5000/books` | Search, view, and add books |
+| **Users** | `http://localhost:5000/users` | Manage students and faculty |
+| **Loans** | `http://localhost:5000/loans` | Borrow and return tracking |
+| **Health API** | `http://localhost:5000/api/health` | Service health status |
 
 ---
 
-## Running Tests
+## 🧪 Testing & Code Quality
+
+The project enforces high test coverage and zero linting violations.
 
 ```bash
-# Run all tests with coverage
+# Run the complete test suite with coverage reporting
 pytest -v --cov=app --cov-report=term-missing --junitxml=reports/test-results.xml tests/
 
-# Run specific test file
-pytest tests/test_borrow_return.py -v
-
-# Coverage HTML report
+# Generate visual HTML coverage report
 pytest --cov=app --cov-report=html:reports/coverage tests/
-```
 
-**Results:** 91 tests, **97% coverage**
-
-## Code Linting
-
-```bash
+# Run Flake8 code linting
 flake8 app/ database/ tests/ run.py --max-line-length=120
 ```
 
----
+### Coverage Summary (97% Coverage Across Core Components)
 
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check (status UP) |
-| GET | `/api/dashboard` | Aggregate statistics |
-| GET | `/api/users` | List all users |
-| POST | `/api/users` | Create user |
-| GET | `/api/users/<id>` | Get user by ID |
-| DELETE | `/api/users/<id>` | Delete user (no active loans) |
-| GET | `/api/books` | List/search books (`?q=devops`) |
-| POST | `/api/books` | Add book |
-| GET | `/api/books/<id>` | Get book by ID |
-| GET | `/api/loans` | List all loans |
-| POST | `/api/borrow` | Borrow a book |
-| POST | `/api/return` | Return a book |
-
-### Example Requests
-
-```bash
-# Health check
-curl http://localhost:5000/api/health
-
-# Search books
-curl "http://localhost:5000/api/books?q=cloud"
-
-# Create user
-curl -X POST http://localhost:5000/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"U200","name":"Grace Hopper","email":"grace@navy.mil","role":"Faculty"}'
-
-# Borrow book
-curl -X POST http://localhost:5000/api/borrow \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"U101","book_id":"B001"}'
-
-# Return book
-curl -X POST http://localhost:5000/api/return \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"U101","book_id":"B001"}'
+```
+Name                              Stmts   Miss  Cover   Missing
+---------------------------------------------------------------
+app/__init__.py                      13      0   100%
+app/models/book.py                   10      0   100%
+app/models/user.py                   10      0   100%
+app/routes/api.py                    92      3    97%   45-47
+app/routes/frontend.py               28      1    96%   38
+app/services/library_service.py     118      3    97%   88, 142, 195
+---------------------------------------------------------------
+TOTAL                               271      7    97%
 ```
 
 ---
 
-## Docker
+## 🐳 Docker Containerization
 
-### Build Image
-
-```bash
-docker build -t library-management-platform:0.0 .
-```
-
-### Run Container
+The project features a **multi-stage Docker build** based on `python:3.11-slim`:
+- **Builder Stage** compiles dependencies and cleans up build artifacts.
+- **Runtime Stage** creates an unprivileged non-root user (`appuser:10001`), copies dependencies, and configures an active `HEALTHCHECK` instruction.
 
 ```bash
-docker run -d -p 5000:5000 --name library-app library-management-platform:0.0
-```
+# Build the production Docker image
+docker build -t library-management-platform:1.0 .
 
-### Verify Health Check
+# Run the container in detached mode
+docker run -d -p 5000:5000 --name library-app library-management-platform:1.0
 
-```bash
-curl http://localhost:5000/api/health
-# {"status":"UP","service":"Enterprise Smart Library Management Platform","version":"1.0.0"}
-
-# Check Docker health status
+# Verify container health status
 docker inspect --format='{{.State.Health.Status}}' library-app
-```
 
-### Stop Container
+# Inspect running container logs
+docker logs -f library-app
 
-```bash
+# Stop and clean up container
 docker stop library-app && docker rm library-app
 ```
 
 ---
 
-## Kubernetes / Minikube
+## ☸️ Kubernetes Orchestration
 
-### Prerequisites
-- Minikube installed
-- kubectl installed
-
-### Deploy
+Deploy high-availability pods to a Kubernetes cluster (e.g., Minikube):
 
 ```bash
 # Start Minikube
 minikube start --driver=docker
 
-# Load local Docker image into Minikube (if not using registry)
-minikube image load library-management-platform:0.0
+# Load local Docker image into Minikube
+minikube image load library-management-platform:1.0
 
-# Apply manifests
+# Apply Kubernetes manifests
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
 
-# Verify 3 replicas are running
-kubectl get pods -l app=library-platform
-
-# Verify rollout
+# Verify deployment rollout status
 kubectl rollout status deployment/library-deployment
 
-# Get service URL
+# Verify that all 3 replicas are running
+kubectl get pods -l app=library-platform
+
+# Expose service in Minikube
 minikube service library-service --url
-# OR access directly: http://<minikube-ip>:30080
+# NodePort access: http://<minikube-ip>:30080
 ```
 
-### Self-Healing Test
+### Self-Healing Demonstration
+When any pod is terminated or fails, Kubernetes automatically provisions a replacement replica to maintain the desired count of 3:
 
 ```bash
-# Delete a pod — Kubernetes will recreate it automatically
-kubectl delete pod <pod-name>
+# Delete any active pod
+kubectl delete pod $(kubectl get pods -l app=library-platform -o jsonpath='{.items[0].metadata.name}')
+
+# Observe immediate self-healing recreation
 kubectl get pods -l app=library-platform -w
 ```
 
-### Cleanup
+---
+
+## ☁️ Infrastructure as Code & Automation
+
+### 1. HashiCorp Terraform (AWS Infrastructure)
+
+The `terraform/` directory defines full cloud infrastructure on AWS:
+- Custom VPC (`10.0.0.0/16`) with DNS support
+- Public Subnet (`10.0.1.0/24`) with auto-assigned public IPs
+- Internet Gateway and Route Table associations
+- Ingress Security Groups for SSH (22), HTTP (80), and App (5000)
+- EC2 t2.micro compute instance running Ubuntu 22.04 LTS
 
 ```bash
-kubectl delete -f k8s/deployment.yaml
-kubectl delete -f k8s/service.yaml
+cd terraform
+
+# Initialize Terraform providers
+terraform init
+
+# Validate syntax and check formatting
+terraform fmt
+terraform validate
+
+# Review execution plan
+terraform plan
+
+# Apply infrastructure changes
+terraform apply -auto-approve
+```
+
+### 2. Ansible Configuration Management
+
+The `ansible/` playbooks automate server bootstrapping and service configuration:
+- System updates and Python runtime installation
+- Docker engine and container runtime deployment
+- Nginx installation and reverse proxy configuration
+- Gunicorn systemd service setup with automatic restart policies
+
+```bash
+cd ansible
+
+# Check syntax of deployment playbook
+ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml --syntax-check
+
+# Execute end-to-end automated configuration
+ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml
 ```
 
 ---
 
-## Jenkins CI/CD
+## 📡 REST API Reference
 
-### Pipeline Stages
+All responses return standard JSON envelopes.
 
-1. **SCM Checkout** — Clone/checkout the repository
-2. **Environment Setup & Dependencies** — Create venv, `pip install`
-3. **Code Linting & Syntax Gate** — Flake8 (fails build if violations)
-4. **Automated Unit & Integration Tests** — Pytest + JUnit XML + coverage
-5. **Build Docker Artifact** — `docker build` tagged with `BUILD_NUMBER`
-6. **Kubernetes Minikube Deployment** — `kubectl apply` + rollout verify
+| Method | Endpoint | Description | Status Code |
+|:-------|:---------|:------------|:------------|
+| `GET` | `/api/health` | Service health status and version info | `200 OK` |
+| `GET` | `/api/dashboard` | Aggregated catalog, user, and loan statistics | `200 OK` |
+| `GET` | `/api/books` | List books (supports `?q=<term>` query filter) | `200 OK` |
+| `POST` | `/api/books` | Register a new book in the catalog | `201 Created` |
+| `GET` | `/api/books/<book_id>` | Retrieve book details by ID | `200 OK` / `404` |
+| `GET` | `/api/users` | List all registered library patrons | `200 OK` |
+| `POST` | `/api/users` | Register a new student or faculty member | `201 Created` |
+| `GET` | `/api/users/<user_id>` | Retrieve user details and loan status | `200 OK` / `404` |
+| `DELETE` | `/api/users/<user_id>` | Delete user (blocked if active loans exist) | `200 OK` / `400` |
+| `GET` | `/api/loans` | View complete loan ledger (active and returned) | `200 OK` |
+| `POST` | `/api/borrow` | Check out a book to a user | `201 Created` / `400` |
+| `POST` | `/api/return` | Return a borrowed book to inventory | `200 OK` / `400` |
 
-### Setup
+<details>
+<summary><strong>🔍 Click to view Sample API Requests & JSON Responses</strong></summary>
 
-1. Install Jenkins with Pipeline and HTML Publisher plugins
-2. Create a new Pipeline job
-3. Set **Pipeline definition** → **Pipeline script from SCM**
-4. Point to your repository — Jenkins will detect `Jenkinsfile` automatically
+#### 1. Health Check
+```bash
+curl -X GET http://localhost:5000/api/health
+```
+```json
+{
+  "status": "UP",
+  "service": "Enterprise Smart Library Management Platform",
+  "version": "1.0.0"
+}
+```
+
+#### 2. Create User
+```bash
+curl -X POST http://localhost:5000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "U103",
+    "name": "Alan Turing",
+    "email": "alan.turing@university.edu",
+    "role": "Faculty"
+  }'
+```
+```json
+{
+  "message": "User registered successfully",
+  "user": {
+    "user_id": "U103",
+    "name": "Alan Turing",
+    "email": "alan.turing@university.edu",
+    "role": "Faculty",
+    "active_loans": 0
+  }
+}
+```
+
+#### 3. Borrow a Book
+```bash
+curl -X POST http://localhost:5000/api/borrow \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "U101",
+    "book_id": "B001"
+  }'
+```
+```json
+{
+  "message": "Book borrowed successfully",
+  "loan": {
+    "loan_id": "L001",
+    "user_id": "U101",
+    "book_id": "B001",
+    "borrow_date": "2026-10-13T10:00:00",
+    "status": "active"
+  }
+}
+```
+
+#### 4. Return a Book
+```bash
+curl -X POST http://localhost:5000/api/return \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "U101",
+    "book_id": "B001"
+  }'
+```
+```json
+{
+  "message": "Book returned successfully",
+  "loan_id": "L001"
+}
+```
+</details>
 
 ---
 
-## Demo Data
+## 👥 Demo Pre-Seeded Records
 
-The system starts with seeded data:
+The database initializes with demo fixtures for immediate evaluation:
 
-**Users:**
-| ID | Name | Email | Role |
-|----|------|-------|------|
-| U101 | Alice Johnson | alice@university.edu | Student |
-| U102 | Dr. Robert Smith | robert.smith@university.edu | Faculty |
-
-**Books:**
-| ID | Title | Author | ISBN | Copies |
-|----|-------|--------|------|--------|
-| B001 | Cloud Native DevOps Architecture | Linus Torvalds | 978-0134685991 | 5 |
-| B002 | Continuous Delivery Principles | Jez Humble & David Farley | 978-0321601919 | 3 |
-
-**Business Rules:**
-- Students: max **3** active loans
-- Faculty: max **5** active loans
-- Inventory never goes negative
-- Users with active loans cannot be deleted
+| Entity | ID | Name / Title | Detail / Role | Copies / Status |
+|:-------|:---|:-------------|:--------------|:----------------|
+| **User** | `U101` | Alice Johnson | Student (`alice@university.edu`) | Active Patron |
+| **User** | `U102` | Dr. Robert Smith | Faculty (`robert.smith@university.edu`) | Active Patron |
+| **Book** | `B001` | Cloud Native DevOps Architecture | Linus Torvalds (`978-0134685991`) | 5 Copies Available |
+| **Book** | `B002` | Continuous Delivery Principles | Jez Humble & David Farley (`978-0321601919`) | 3 Copies Available |
 
 ---
 
-## URLs
+## 🔧 Troubleshooting Guide
 
-| Service | URL |
-|---------|-----|
-| Dashboard (local) | http://localhost:5000 |
-| Books page | http://localhost:5000/books |
-| Users page | http://localhost:5000/users |
-| Loans page | http://localhost:5000/loans |
-| Health endpoint | http://localhost:5000/api/health |
-| Kubernetes NodePort | http://\<minikube-ip\>:30080 |
+| Symptom | Potential Cause | Solution |
+|:--------|:----------------|:---------|
+| **Port 5000 occupied** | Previous instance still active | Find process using port 5000 (`netstat -ano \| findstr 5000`) and terminate it. |
+| **Docker build fails** | Docker daemon offline | Ensure Docker Desktop is running with Linux container backend enabled. |
+| **K8s pods Pending/ImagePullBackOff** | Image missing in Minikube | Run `minikube image load library-management-platform:1.0` before deploying manifests. |
+| **Flake8 lint failure** | Unformatted line or import order | Check offending lines with `flake8 --show-source` and reformat to max 120 chars. |
+| **Tests fail on import** | Virtualenv missing dependencies | Ensure `.venv` is activated and run `pip install -r requirements.txt`. |
 
 ---
 
-## Troubleshooting
+## 📄 License & Attribution
 
-**App won't start:**
-- Ensure virtual environment is activated
-- Run `pip install -r requirements.txt`
-- Check port 5000 is not already in use: `netstat -an | grep 5000`
+This project is licensed under the **MIT License** — feel free to use, modify, and distribute this codebase for educational and enterprise purposes.
 
-**Tests failing:**
-- Ensure you are in the project root directory
-- Run `pip install -r requirements.txt` first
-
-**Docker build fails:**
-- Ensure Docker Desktop is running
-- Try: `docker system prune` and rebuild
-
-**Minikube pods not healthy:**
-- Run `kubectl describe pod <pod-name>` to see events
-- Ensure the image is available inside Minikube: `minikube image ls`
-- Load image: `minikube image load library-management-platform:0.0`
+<div align="center">
+  <sub>Built with ❤️ for Modern Cloud-Native DevOps Engineering</sub>
+</div>
