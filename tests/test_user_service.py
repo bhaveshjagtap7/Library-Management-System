@@ -147,3 +147,57 @@ class TestDeleteUser:
         library_service.delete_user('U300')
         result = library_service.get_user('U300')
         assert result['success'] is False
+
+
+class TestUpdateUser:
+    def test_update_user_name_and_email(self):
+        from app.services.library_service import library_service
+        result = library_service.update_user('U101', {
+            'name': 'Alice J. Updated',
+            'email': 'alice.updated@university.edu',
+        })
+        assert result['success'] is True
+        assert result['code'] == 200
+        assert result['user']['name'] == 'Alice J. Updated'
+        assert result['user']['email'] == 'alice.updated@university.edu'
+
+    def test_update_user_not_found(self):
+        from app.services.library_service import library_service
+        result = library_service.update_user('U999', {'name': 'New Name'})
+        assert result['success'] is False
+        assert result['code'] == 404
+
+    def test_update_user_empty_name(self):
+        from app.services.library_service import library_service
+        result = library_service.update_user('U101', {'name': '   '})
+        assert result['success'] is False
+        assert result['code'] == 400
+
+    def test_update_user_invalid_role(self):
+        from app.services.library_service import library_service
+        result = library_service.update_user('U101', {'role': 'SuperAdmin'})
+        assert result['success'] is False
+        assert result['code'] == 400
+
+
+class TestGetUserLoans:
+    def test_get_user_loans_empty(self):
+        from app.services.library_service import library_service
+        result = library_service.get_user_loans('U101')
+        assert result['success'] is True
+        assert result['code'] == 200
+        assert len(result['loans']) == 0
+
+    def test_get_user_loans_with_borrowed_books(self):
+        from app.services.library_service import library_service
+        library_service.borrow_book('U101', 'B001')
+        result = library_service.get_user_loans('U101')
+        assert result['success'] is True
+        assert len(result['loans']) == 1
+        assert result['loans'][0]['book_id'] == 'B001'
+
+    def test_get_user_loans_not_found(self):
+        from app.services.library_service import library_service
+        result = library_service.get_user_loans('U999')
+        assert result['success'] is False
+        assert result['code'] == 404

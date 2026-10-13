@@ -91,6 +91,57 @@ class LibraryService:
             del db.users[user_id]
             return {'success': True, 'message': f"User '{user_id}' deleted", 'code': 200}
 
+    def update_user(self, user_id: str, data: dict) -> dict:
+        """Update existing user profile (name, email, role)."""
+        with db.get_data_lock():
+            user = db.users.get(user_id)
+            if not user:
+                return {'success': False, 'error': f"User '{user_id}' not found", 'code': 404}
+
+            if 'name' in data:
+                name = (data.get('name') or '').strip()
+                if not name:
+                    return {'success': False, 'error': 'name cannot be empty', 'code': 400}
+                user.name = name
+
+            if 'email' in data:
+                email = (data.get('email') or '').strip()
+                if not email:
+                    return {'success': False, 'error': 'email cannot be empty', 'code': 400}
+                user.email = email
+
+            if 'role' in data:
+                role = (data.get('role') or '').strip()
+                if role not in self.VALID_ROLES:
+                    return {
+                        'success': False,
+                        'error': f"role must be one of: {', '.join(self.VALID_ROLES)}",
+                        'code': 400,
+                    }
+                if role == 'Student' and user.active_loans > 3:
+                    return {
+                        'success': False,
+                        'error': (
+                            f"Cannot change role to Student: user currently has "
+                            f"{user.active_loans} active loans (Student limit is 3)"
+                        ),
+                        'code': 409,
+                    }
+                user.role = role
+
+            return {'success': True, 'user': user.to_dict(), 'code': 200}
+
+    def get_user_loans(self, user_id: str) -> dict:
+        """Get all loans associated with a specific user."""
+        with db.get_data_lock():
+            if user_id not in db.users:
+                return {'success': False, 'error': f"User '{user_id}' not found", 'code': 404}
+            user_loans = [
+                ln for ln in db.loans.values()
+                if ln['user_id'] == user_id
+            ]
+            return {'success': True, 'user_id': user_id, 'loans': user_loans, 'code': 200}
+
     # ─────────────────────────── BOOK OPERATIONS ────────────────────────────
 
     def add_book(self, data: dict) -> dict:

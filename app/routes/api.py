@@ -47,6 +47,21 @@ def get_all_users():
     return jsonify(result), code
 
 
+@api_blueprint.route('/users/<user_id>', methods=['PUT'])
+def update_user(user_id):
+    data = request.get_json(silent=True) or {}
+    result = library_service.update_user(user_id, data)
+    code = result.pop('code')
+    return jsonify(result), code
+
+
+@api_blueprint.route('/users/<user_id>/loans', methods=['GET'])
+def get_user_loans(user_id):
+    result = library_service.get_user_loans(user_id)
+    code = result.pop('code')
+    return jsonify(result), code
+
+
 @api_blueprint.route('/users/<user_id>', methods=['DELETE'])
 def delete_user(user_id):
     result = library_service.delete_user(user_id)
